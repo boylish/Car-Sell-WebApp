@@ -1,11 +1,10 @@
 "use client";
-import { useSearchParams } from "next/navigation";
-import React, { useState } from "react";
-import { carData } from "../data/carData";
+import { Suspense, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import axios from "axios";
-import emailjs from "emailjs-com";
+import emailjs from "@emailjs/browser";
 import ClipLoader from "react-spinners/ClipLoader";
-import { useRouter } from "next/navigation";
+import { carData } from "../data/carData";
 
 const kmsOptions = [
   "Below 20,000",
@@ -18,13 +17,12 @@ const sellTimings = ["Immediately", "Within a month", "After a month"];
 const fuelTypes = ["Petrol", "Diesel", "CNG", "EV"];
 const transmissions = ["Manual", "Auto"];
 
-export default function MultiStepForm() {
+function FormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const brand = searchParams.get("brand") || "";
   const models = carData[brand]?.models || [];
   const [loading, setLoading] = useState(false);
-
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     city: "",
@@ -66,11 +64,7 @@ export default function MultiStepForm() {
     };
 
     try {
-      await axios.post("/api/cars", payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      await axios.post("/api/cars", payload);
       await emailjs.send(
         process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
         process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
@@ -89,13 +83,13 @@ export default function MultiStepForm() {
         process.env.NEXT_PUBLIC_EMAILJS_USER_ID
       );
 
-      alert("Form submitted and email sent successfully!");
+      alert("Form submitted successfully!");
+      router.push("/");
     } catch (error) {
-      console.error("Error submitting form or sending email:", error.message);
+      console.error("Error:", error);
       alert("Submission failed. Please try again.");
     } finally {
       setLoading(false);
-      router.push("/");
     }
   };
 
@@ -107,10 +101,11 @@ export default function MultiStepForm() {
         </h2>
 
         <form onSubmit={handleSubmit}>
+          {/* Step 1: City Selection */}
           {step === 1 && (
             <>
               <label className="block mb-2 font-semibold">Choose City</label>
-              <div className="flex flex-wrap  gap-2 mb-4">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {["Delhi", "Mumbai", "Bangalore", "Hyderabad", "Chennai"].map(
                   (city) => (
                     <button
@@ -134,7 +129,7 @@ export default function MultiStepForm() {
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border rounded mb-4 border-pink-600 bg-white "
+                className="w-full px-3 py-2 border rounded mb-4 border-pink-600 bg-white"
                 placeholder="Enter your city"
               />
               <button
@@ -147,7 +142,6 @@ export default function MultiStepForm() {
               </button>
             </>
           )}
-
           {step === 2 && (
             <>
               <label className="block mb-2 font-semibold">
@@ -362,6 +356,7 @@ export default function MultiStepForm() {
                 value={formData.phone}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border-pink-600 border rounded mb-4 bg-white"
+                required
               />
               <label className="block mb-2">Email Address</label>
               <input
@@ -370,9 +365,11 @@ export default function MultiStepForm() {
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-pink-600 rounded mb-4 bg-white"
+                required
               />
               <div className="flex justify-between">
                 <button
+                  type="button"
                   onClick={prevStep}
                   className="bg-gray-300 px-4 py-2 rounded"
                 >
@@ -391,5 +388,13 @@ export default function MultiStepForm() {
         </form>
       </div>
     </main>
+  );
+}
+
+export default function MultiStepForm() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <FormContent />
+    </Suspense>
   );
 }
