@@ -66,7 +66,11 @@ export default function MultiStepForm() {
     };
 
     try {
-      await axios.post("http://localhost:5000/api/cars/add", payload);
+      await axios.post("/api/cars", payload, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       await emailjs.send(
         process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
         process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
